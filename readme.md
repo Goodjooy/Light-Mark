@@ -1,6 +1,8 @@
 # Light Mark 极简的标记语言
 
 ---
+一个`Light Mark`标记语言分析器  
+本项目使用 [Pest](https://pest.rs/)  
 
 ## 特色
 
@@ -77,7 +79,7 @@ fn main(){
 也没有什么特别的emm 好吧 加粗（斜体（颜色（#FFFFFF, 非常重要！！）））
 分段（）
 url(https://pest.rs/book/grammars/syntax.html, 颜色（#ABCDEF,好欸）)
-图片（https://pest.rs/book/grammars/syntax.html，怎么样？）
+图片（https://pest.rs/book/grammars/syntax.html，“怎么样？”）
 ```
 
 将会被转换为
@@ -170,4 +172,3 @@ url(https://pest.rs/book/grammars/syntax.html, 颜色（#ABCDEF,好欸）)
 ```
 
 渲染交给前端
-

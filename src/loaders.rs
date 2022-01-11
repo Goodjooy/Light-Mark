@@ -125,7 +125,9 @@ pub(crate) fn load_image(pair: Pair<Rule>) -> Option<marks::Syntax> {
         let mut inner = pair.into_inner();
 
         let url = inner.next().unwrap().as_str().to_string();
-        let name = inner.next().and_then(|s| Some(s.as_str().to_string()));
+        let name = inner
+            .next()
+            .and_then(|s| Some(s.into_inner().next().unwrap().as_str().to_string()));
 
         Some(marks::Syntax::Image { name, url })
     } else {
