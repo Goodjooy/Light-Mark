@@ -12,7 +12,9 @@ pub(crate) fn load_expr(pair: Pair<Rule>) -> Option<Vec<marks::Syntax>> {
                 .map(|p| pars_marker(p))
                 .collect(),
         )
-    } else {
+    } 
+    
+    else {
         None
     }
 }
@@ -130,6 +132,19 @@ pub(crate) fn load_image(pair: Pair<Rule>) -> Option<marks::Syntax> {
             .and_then(|s| Some(s.into_inner().next().unwrap().as_str().to_string()));
 
         Some(marks::Syntax::Image { name, url })
+    } else {
+        None
+    }
+}
+
+pub(crate) fn load_raw(pair: Pair<Rule>)->Option<marks::Syntax>{
+    if let Rule::raw_call = pair.as_rule() {
+        let mut res=Vec::new();
+        let mut inner=pair.into_inner();
+        res.push(inner.next().unwrap().as_str().to_string().into());
+        res.extend(load_expr(inner.next().unwrap()).unwrap());
+        res.push(inner.next().unwrap().as_str().to_string().into());
+        Some(marks::Syntax::Muli(res))
     } else {
         None
     }

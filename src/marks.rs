@@ -16,6 +16,8 @@ pub struct FontSize {
 #[derive(Debug,serde::Serialize)]
 #[serde(tag="type",content ="inner")]
 pub enum Syntax {
+    #[serde(skip)]
+    Muli(Vec<Syntax>),
     Plain(String),
     Color{color:Color,inner:Vec<Syntax>},
     FontSize{font_size:FontSize,inner:Vec<Syntax>},

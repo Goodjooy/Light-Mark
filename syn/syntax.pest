@@ -42,7 +42,8 @@ func_call = {
         sep_call |
         font_size_call |
         url_call |
-        img_call
+        img_call |
+        raw_call
      )
  }
 // 颜色
@@ -80,5 +81,9 @@ url_name = _{"url"|"链接"}
 // 网址
 img_call= {img_name ~ left_bask ~ url ~ (sep_sign ~ string )? ~ right_bask}
 img_name = _{"image"|"图片"}
+
+raw_call = { left_bask ~ left_cap ~ expr ~ right_cap ~ right_bask}
+left_cap = { left_bask }
+right_cap = { right_bask }
 
 root =_{SOI ~ expr ~ EOI}

@@ -1,6 +1,6 @@
 use loaders::{
     load_blob, load_color, load_font_size, load_image, load_italic, load_para, load_sep,
-    load_string, load_url,
+    load_string, load_url, load_raw,
 };
 use pest::{iterators::Pair, Parser};
 
@@ -57,6 +57,7 @@ fn pars_marker(pair: Pair<Rule>) -> marks::Syntax {
         Rule::font_size_call => load_font_size(pair).unwrap().into(),
         Rule::url_call => load_url(pair).unwrap(),
         Rule::img_call => load_image(pair).unwrap(),
+        Rule::raw_call=>load_raw(pair).unwrap(),
         // secep
         Rule::any => pair.as_str().trim().to_string().into(),
         Rule::func_call => pars_marker(pair.into_inner().next().unwrap()),
@@ -100,6 +101,9 @@ fn simplfy_expr(src: Vec<marks::Syntax>) -> Vec<marks::Syntax> {
                     name: name.and_then(|f| Some(simplfy_expr(f))),
                     url,
                 }),
+                marks::Syntax::Muli(inner)=>{
+                    res.extend(simplfy_expr(inner))
+                }
                 marks::Syntax::Plain(_) => unreachable!(),
                 el => res.push(el),
             }
@@ -116,6 +120,18 @@ fn simplfy_expr(src: Vec<marks::Syntax>) -> Vec<marks::Syntax> {
 mod test {
 
     use crate::inner_parser;
+
+    #[test]
+    fn test_raw() {
+        let s = "aa（（ababbbv`abba`“我不是在”））";
+
+        let res = inner_parser(s);
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        let jv = serde_json::to_string_pretty(&res).unwrap();
+
+        println!("{}", jv)
+    }
 
     #[test]
     fn test_plain() {
