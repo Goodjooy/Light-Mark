@@ -16,10 +16,11 @@
 
 - `color( Color, expr )` | `颜色（Color，expr）`
   用于将`expr`上色，`expr`为任意合法表达式
-  Color 有两种格式
+  Color 有3种格式
 
   - `#FFFFFF` --# + 连续 6 个 16 进制数字
   - `(255,255,255)` -- R,G,B 通道，每个值 0~255
+  - `red` -- 一个具体的颜色名称（应该和css颜色一样多，但是还没有全部添加）
 
 - `blob( expr )` | `加粗（ expr ）`
   用于加粗`expr`, `expr`为任意合法表达式

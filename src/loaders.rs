@@ -26,7 +26,6 @@ pub(crate) fn load_expr(pair: Pair<Rule>) -> Option<Vec<marks::Syntax>> {
 }
 
 pub(crate) fn parse_marker(pair: Pair<Rule>) -> Vec<marks::Syntax> {
-    println!("{:?}",pair.as_rule());
     let handle = match pair.as_rule() {
         Rule::string => <String as IntoSyntax>::into_syn,
         Rule::color_call => <Color as IntoSyntax>::into_syn,

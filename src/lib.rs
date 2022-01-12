@@ -80,7 +80,7 @@ mod test {
 
     #[test]
     fn test_color_call() {
-        let s = "color(#ffaa12,对，的)，颜色（（1，1，1），好）";
+        let s = "color(#ffaa12,对，的)，颜色（red，好）";
 
         let res = inner_parser(s);
         assert!(res.is_ok());

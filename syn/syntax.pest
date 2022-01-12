@@ -55,10 +55,12 @@ color_name= _{"color"| "颜色"}
 color = { 
     rgb_color
     | hex_rgb_color
+    | named_color
     }
 
 rgb_color= {left_bask ~ color_digit ~ sep_sign ~ color_digit ~ sep_sign ~ color_digit ~ right_bask}
-hex_rgb_color = { "#" ~ color_hex{3} }
+hex_rgb_color = ${ "#" ~ color_hex{3} }
+named_color = ${ ('a'..'z'| 'A'..'Z')+ }
 
 color_digit={ "0" | ("1"|"2") ~ ASCII_DIGIT{2}| ASCII_NONZERO_DIGIT ~ ASCII_DIGIT? }
 color_hex= {ASCII_HEX_DIGIT{2}}
