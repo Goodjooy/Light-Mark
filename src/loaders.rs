@@ -1,151 +1,107 @@
 use crate::{
-    marks::{self, FontSize},
-    pars_marker, Rule,
+    marks::{
+        self,
+        color::Color,
+        font_size::FontSize,
+        simple_calls::{Blob, Group, Image, Italic, Pack, Paragraph, Seperate, Url},
+        IntoSyntax,
+    },
+    Rule,
 };
 use pest::iterators::Pair;
 
 pub(crate) fn load_expr(pair: Pair<Rule>) -> Option<Vec<marks::Syntax>> {
     if let Rule::expr = pair.as_rule() {
-        Some(
-            pair.into_inner()
-                .into_iter()
-                .map(|p| pars_marker(p))
-                .collect(),
-        )
-    } 
-    
-    else {
+        pair.into_inner()
+            .into_iter()
+            .map(|p| parse_marker(p))
+            .reduce(|mut l, r| {
+                l.extend(r);
+                l
+            })
+            .and_then(|s| Some(simplfy_expr(s)))
+    } else {
         None
     }
 }
 
-pub(crate) fn load_color(pair: Pair<Rule>) -> Option<(marks::Color, Vec<marks::Syntax>)> {
-    if let Rule::color_call = pair.as_rule() {
-        let mut inner = pair.into_inner();
-        let color = inner.next().unwrap();
-        let expr = inner.next().unwrap();
+pub(crate) fn parse_marker(pair: Pair<Rule>) -> Vec<marks::Syntax> {
+    println!("{:?}",pair.as_rule());
+    let handle = match pair.as_rule() {
+        Rule::string => <String as IntoSyntax>::into_syn,
+        Rule::color_call => <Color as IntoSyntax>::into_syn,
+        Rule::blod_call => Blob::into_syn,
+        Rule::italic_call => Italic::into_syn,
+        Rule::para_call=>Paragraph::into_syn,
+        Rule::sep_call => Seperate::into_syn,
+        Rule::font_size_call => FontSize::into_syn,
+        Rule::url_call => Url::into_syn,
+        Rule::img_call => Image::into_syn,
+        Rule::raw_call => Pack::into_syn,
+        Rule::group_call => Group::into_syn,
+        // secep
+        Rule::any => Any::into_syn,
+        Rule::EOI => Eoi::into_syn,
+        //else
+        _ => unreachable!(),
+    };
+    handle(pair)
+}
 
-        // load color
-        let color = if color.as_str().starts_with("(") {
-            let mut inner = color.into_inner();
-            let r: u8 = inner.next().unwrap().as_str().trim().parse().unwrap();
-            let g: u8 = inner.next().unwrap().as_str().trim().parse().unwrap();
-            let b: u8 = inner.next().unwrap().as_str().trim().parse().unwrap();
-            marks::Color { r, g, b }
+crate::non_data_mark!(Any, Rule::any, on_reach_any);
+fn on_reach_any(pair: Pair<Rule>) -> marks::Syntax {
+    pair.as_str().to_string().into()
+}
+
+crate::non_data_mark!(Eoi,Rule::EOI,vec => on_eoi);
+fn on_eoi(_pair: Pair<Rule>)->Vec<marks::Syntax>{
+    vec![]
+}
+
+
+pub(crate) fn simplfy_expr(src: Vec<marks::Syntax>) -> Vec<marks::Syntax> {
+    let mut res = Vec::with_capacity(src.len());
+    let mut last = Option::<String>::None;
+    for syn in src {
+        if let marks::Syntax::Plain(s) = syn {
+            if let Some(last) = &mut last {
+                if s.len() == 0 {
+                    last.push(' ');
+                } else {
+                    last.push_str(&s);
+                }
+            } else {
+                last = Some(s)
+            }
         } else {
-            let mut inner = color.into_inner();
-
-            let r = inner.next().unwrap().as_str().trim();
-            let r = u8::from_str_radix(r, 16).unwrap();
-            let g = inner.next().unwrap().as_str().trim();
-            let g = u8::from_str_radix(g, 16).unwrap();
-            let b = inner.next().unwrap().as_str().trim();
-            let b = u8::from_str_radix(b, 16).unwrap();
-            marks::Color { r, g, b }
-        };
-
-        // load syntax
-        let syn = load_expr(expr)?;
-
-        Some((color, syn))
-    } else {
-        None
+            // check ok
+            if let Some(ls) = last {
+                if ls.len() != 0 {
+                    res.push(ls.into());
+                }
+                last = None;
+            }
+            match syn {
+                marks::Syntax::Color { color, inner } => {
+                    res.push((color, simplfy_expr(inner)).into())
+                }
+                marks::Syntax::FontSize { font_size, inner } => {
+                    res.push((font_size, simplfy_expr(inner)).into())
+                }
+                marks::Syntax::Blod(s) => res.push(marks::Syntax::Blod(simplfy_expr(s))),
+                marks::Syntax::Italic(s) => res.push(marks::Syntax::Italic(simplfy_expr(s))),
+                marks::Syntax::Url { name, url } => res.push(marks::Syntax::Url {
+                    name: name.and_then(|f| Some(simplfy_expr(f))),
+                    url,
+                }),
+                marks::Syntax::Plain(_) => unreachable!(),
+                el => res.push(el),
+            }
+        }
     }
-}
-
-pub(crate) fn load_blob(pair: Pair<Rule>) -> Option<marks::Syntax> {
-    if let Rule::blod_call = pair.as_rule() {
-        Some(marks::Syntax::Blod(load_expr(
-            pair.into_inner().next().unwrap(),
-        )?))
-    } else {
-        None
+    // check ok
+    if let Some(ls) = last {
+        res.push(ls.into());
     }
-}
-
-pub(crate) fn load_italic(pair: Pair<Rule>) -> Option<marks::Syntax> {
-    if let Rule::italic_call = pair.as_rule() {
-        Some(marks::Syntax::Italic(load_expr(
-            pair.into_inner().next().unwrap(),
-        )?))
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_para(pair: Pair<Rule>) -> Option<marks::Syntax> {
-    if let Rule::para_call = pair.as_rule() {
-        Some(marks::Syntax::Paragraph)
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_sep(pair: Pair<Rule>) -> Option<marks::Syntax> {
-    if let Rule::sep_call = pair.as_rule() {
-        Some(marks::Syntax::Seperate)
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_string(pair: Pair<Rule>) -> Option<String> {
-    if let Rule::string = pair.as_rule() {
-        Some(pair.into_inner().next().unwrap().as_str().to_string())
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_font_size(pair: Pair<Rule>) -> Option<(FontSize, Vec<marks::Syntax>)> {
-    if let Rule::font_size_call = pair.as_rule() {
-        let mut inner = pair.into_inner();
-        let size = inner.next().unwrap().as_str().parse::<f64>().unwrap();
-        let expr = inner.next().unwrap();
-        let expr = load_expr(expr).unwrap();
-        Some((FontSize { size }, expr))
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_url(pair: Pair<Rule>) -> Option<marks::Syntax> {
-    if let Rule::url_call = pair.as_rule() {
-        let mut inner = pair.into_inner();
-
-        let url = inner.next().unwrap().as_str().to_string();
-        let name = inner.next().and_then(|s| load_expr(s));
-
-        Some(marks::Syntax::Url { name, url })
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_image(pair: Pair<Rule>) -> Option<marks::Syntax> {
-    if let Rule::img_call = pair.as_rule() {
-        let mut inner = pair.into_inner();
-
-        let url = inner.next().unwrap().as_str().to_string();
-        let name = inner
-            .next()
-            .and_then(|s| Some(s.into_inner().next().unwrap().as_str().to_string()));
-
-        Some(marks::Syntax::Image { name, url })
-    } else {
-        None
-    }
-}
-
-pub(crate) fn load_raw(pair: Pair<Rule>)->Option<marks::Syntax>{
-    if let Rule::raw_call = pair.as_rule() {
-        let mut res=Vec::new();
-        let mut inner=pair.into_inner();
-        res.push(inner.next().unwrap().as_str().to_string().into());
-        res.extend(load_expr(inner.next().unwrap()).unwrap());
-        res.push(inner.next().unwrap().as_str().to_string().into());
-        Some(marks::Syntax::Muli(res))
-    } else {
-        None
-    }
+    res
 }

@@ -5,15 +5,15 @@
 //
 WHITESPACE = _{ "\n" }
 
-expr = {
-    (
-    string |
-    func_call |
-    any
-    )+
+expr = { expr_inner+ }
+
+expr_inner= _{ string | func_call | any }
+
+block = _{
+    (sep_func_call | expr_inner )+
 }
 
-any={ ! (right_bask) ~ANY | ( color_name | blod_name | italic_name | para_name | sep_name | font_size_name | url_name | img_name ) }
+any = { ! (right_bask) ~ANY | ( color_name | blod_name | italic_name | para_name | sep_name | font_size_name | url_name | img_name ) }
 
 string= ${ str_bound ~ str_inner ~ str_bound }
 str_bound= _{"\""|"“"|"”"|"'"|"`"}
@@ -33,41 +33,52 @@ sep_sign=_{","|"，"}
 url= { "http" ~  "s"? ~ "://" ~ url_meta+ }
 url_meta= _{ !(right_bask|sep_sign)~ (!("%") ~ ANY | "%" ~ ASCII_HEX_DIGIT{2})  }
 
-func_call = {
+func_call = _{
      (
         color_call |
         blod_call |
         italic_call |
-        para_call |
-        sep_call |
+
         font_size_call |
         url_call |
         img_call |
         raw_call
-     )
+     )| group_call
+ }
+
+ sep_func_call = _{
+     para_call | sep_call
  }
 // 颜色
 color_call = {color_name ~ left_bask ~ color~ sep_sign ~ expr ~ right_bask }
 color_name= _{"color"| "颜色"}
-color = { left_bask ~ color_digit ~ sep_sign ~ color_digit ~ sep_sign ~ color_digit ~ right_bask
-        | "#" ~ color_hex{3}
-}
+color = { 
+    rgb_color
+    | hex_rgb_color
+    }
+
+rgb_color= {left_bask ~ color_digit ~ sep_sign ~ color_digit ~ sep_sign ~ color_digit ~ right_bask}
+hex_rgb_color = { "#" ~ color_hex{3} }
+
 color_digit={ "0" | ("1"|"2") ~ ASCII_DIGIT{2}| ASCII_NONZERO_DIGIT ~ ASCII_DIGIT? }
 color_hex= {ASCII_HEX_DIGIT{2}}
 
 //强调
 blod_call = {blod_name ~ left_bask ~ expr ~ right_bask }
-
 blod_name = _{"blod" | "加粗"}
+
 //斜体
 italic_call = { italic_name ~ left_bask ~ expr ~ right_bask }
 italic_name= _{ "italic" | "斜体" }
+
 // 分段
 para_call={ para_name ~ left_bask~ right_bask}
 para_name = _{"paragraph"| "分段"}
+
 // 分割线
 sep_call ={ sep_name~left_bask~right_bask }
 sep_name= _{"seperate" | "分割线"}
+
 // 字体大小
 font_size_call = {font_size_name ~ left_bask ~ font_size_num ~ sep_sign~ expr~right_bask }
 font_size_name = _{"font_size" | "字体大小"}
@@ -79,11 +90,13 @@ url_call= {url_name ~ left_bask ~ url ~ (sep_sign ~ expr )? ~ right_bask}
 url_name = _{"url"|"链接"}
 
 // 网址
-img_call= {img_name ~ left_bask ~ url ~ (sep_sign ~ string )? ~ right_bask}
+img_call= {img_name ~ left_bask ~ url ~ (sep_sign ~ expr )? ~ right_bask}
 img_name = _{"image"|"图片"}
 
 raw_call = { left_bask ~ left_cap ~ expr ~ right_cap ~ right_bask}
 left_cap = { left_bask }
 right_cap = { right_bask }
 
-root =_{SOI ~ expr ~ EOI}
+group_call = { left_bask ~ expr ~ right_bask }
+
+root =_{SOI ~ block ~ EOI}
