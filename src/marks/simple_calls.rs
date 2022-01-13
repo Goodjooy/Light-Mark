@@ -54,9 +54,14 @@ fn on_pack_call(pair: Pair<rule::Rule>) -> Vec<Syntax> {
     // 左括号
     res.push(inner.next().unwrap().as_str().to_string().into());
     // 中间表达式
-    res.extend(load_expr(inner.next().unwrap()).unwrap());
-    // 右括号
-    res.push(inner.next().unwrap().as_str().to_string().into());
+    let expr = inner.next().unwrap();
+    if expr.as_rule() == rule::Rule::expr {
+        res.extend(load_expr(expr).unwrap());
+        // 右括号
+        res.push(inner.next().unwrap().as_str().to_string().into());
+    } else {
+        res.push(expr.as_str().to_string().into())
+    }
 
     res
 }

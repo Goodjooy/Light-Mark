@@ -3,6 +3,8 @@
 // syntax
 // Author: FrozenString
 //
+root =_{SOI ~ block ~ EOI}
+
 WHITESPACE = _{ "\n" }
 
 expr = { expr_inner+ }
@@ -13,7 +15,7 @@ block = _{
     (sep_func_call | expr_inner )+
 }
 
-any = { ! (right_bask) ~ANY | ( color_name | blod_name | italic_name | para_name | sep_name | font_size_name | url_name | img_name ) }
+any = { ! (right_bask) ~ANY | fun_name }
 
 string= ${ str_bound ~ str_inner ~ str_bound }
 str_bound= _{"\""|"“"|"”"|"'"|"`"}
@@ -33,6 +35,10 @@ sep_sign=_{","|"，"}
 url= { "http" ~  "s"? ~ "://" ~ url_meta+ }
 url_meta= _{ !(right_bask|sep_sign)~ (!("%") ~ ANY | "%" ~ ASCII_HEX_DIGIT{2})  }
 
+fun_name = _{
+    color_name | blod_name | italic_name | para_name | sep_name | font_size_name | url_name | img_name 
+}
+
 func_call = _{
      (
         color_call |
@@ -46,9 +52,7 @@ func_call = _{
      )| group_call
  }
 
- sep_func_call = _{
-     para_call | sep_call
- }
+
 // 颜色
 color_call = {color_name ~ left_bask ~ color~ sep_sign ~ expr ~ right_bask }
 color_name= _{"color"| "颜色"}
@@ -73,13 +77,6 @@ blod_name = _{"blod" | "加粗"}
 italic_call = { italic_name ~ left_bask ~ expr ~ right_bask }
 italic_name= _{ "italic" | "斜体" }
 
-// 分段
-para_call={ para_name ~ left_bask~ right_bask}
-para_name = _{"paragraph"| "分段"}
-
-// 分割线
-sep_call ={ sep_name~left_bask~right_bask }
-sep_name= _{"seperate" | "分割线"}
 
 // 字体大小
 font_size_call = {font_size_name ~ left_bask ~ font_size_num ~ sep_sign~ expr~right_bask }
@@ -95,10 +92,37 @@ url_name = _{"url"|"链接"}
 img_call= {img_name ~ left_bask ~ url ~ (sep_sign ~ expr )? ~ right_bask}
 img_name = _{"image"|"图片"}
 
-raw_call = { left_bask ~ left_cap ~ expr ~ right_cap ~ right_bask}
+// 显示括号
+raw_call = { left_bask ~ left_cap ~ expr? ~ right_cap ~ right_bask}
 left_cap = { left_bask }
 right_cap = { right_bask }
 
+// 成组
 group_call = { left_bask ~ expr ~ right_bask }
 
-root =_{SOI ~ block ~ EOI}
+ sep_func_call = _{
+     para_call | sep_call
+ }
+
+// 分段
+para_call= { para_name ~ left_bask ~ right_bask}
+para_name = _{ "paragraph" | "分段" }
+
+// 分割线
+sep_call = { sep_name ~ left_bask ~ right_bask }
+sep_name= _{"seperate" | "分割线"}
+
+// 标题
+title_call = { title_name ~ left_bask ~ title_level ~ sep_sign ~ expr ~right_bask }
+title_name _{"title" | "标题" }
+title_level= { '1'..'6' }
+
+// 无序列表
+ulist_call = { ulist_name ~ left_bask ~ list_inner ~ (sep_sign ~ list_inner)* ~ right_bask }
+ulist_name = _{ "ulist" | "无序列表" }
+
+// 有序列表
+olist_call = { olist_name ~ left_bask ~ list_inner ~ (sep_sign ~ list_inner)* ~ right_bask }
+olist_name = _{ "olist" | "有序列表" }
+
+list_inner { left_bask ~ expr ~ (sep_sign ~ ( expr | olist_call | ulist_call ))? ~ right_bask  }
